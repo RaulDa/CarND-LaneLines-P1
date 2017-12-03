@@ -1,56 +1,39 @@
 # **Finding Lane Lines on the Road** 
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-<img src="examples/laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
+## Writeup
 
-Overview
 ---
 
-When we drive, we use our eyes to decide where to go.  The lines on the road that show us where the lanes are act as our constant reference for where to steer the vehicle.  Naturally, one of the first things we would like to do in developing a self-driving car is to automatically detect lane lines using an algorithm.
+**Finding Lane Lines on the Road**
 
-In this project you will detect lane lines in images using Python and OpenCV.  OpenCV means "Open-Source Computer Vision", which is a package that has many useful tools for analyzing images.  
+The goals / steps of this project are the following:
+* Make a pipeline that finds lane lines on the road
+* Reflect on your work in a written report
 
-To complete the project, two files will be submitted: a file containing project code and a file containing a brief write up explaining your solution. We have included template files to be used both for the [code](https://github.com/udacity/CarND-LaneLines-P1/blob/master/P1.ipynb) and the [writeup](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md).The code file is called P1.ipynb and the writeup template is writeup_template.md 
-
-To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
-
-
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
-
-1. Describe the pipeline
-
-2. Identify any shortcomings
-
-3. Suggest possible improvements
-
-We encourage using images in your writeup to demonstrate how your pipeline works.  
-
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
-
-
-The Project
 ---
 
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you should install the starter kit to get started on this project. ##
+### Reflection
 
-**Step 1:** Set up the [CarND Term1 Starter Kit](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/83ec35ee-1e02-48a5-bdb7-d244bd47c2dc/lessons/8c82408b-a217-4d09-b81d-1bda4c6380ef/concepts/4f1870e0-3849-43e4-b670-12e6f2d4b7a7) if you haven't already.
+### 1. Description
 
-**Step 2:** Open the code in a Jupyter Notebook
+My pipeline consists of 5 steps. First, the images are converted to grayscale. Then, gaussian smoothing is applied to suppress noise and spurious gradients by averaging. The third step is the application of the Canny edge detection algorithm to identify the image boundaries. Afterwards, a focus on the region of interest is achieved by using region masking. Finally, the Hough transform is applied to detect the lines among all boundaries. As a result of this, a set of detected lane lines is shown in the final image: 
 
-You will complete the project code in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out <A HREF="https://www.packtpub.com/books/content/basics-jupyter-notebook-and-python" target="_blank">Cyrille Rossant's Basics of Jupyter Notebook and Python</A> to get started.
+[image1]: ./test_images_output/solidYellowLeft.jpg "Detected lines"
+![alt text][image1]
 
-Jupyter is an Ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, use terminal to navigate to your project directory and then run the following command at the terminal prompt (be sure you've activated your Python 3 carnd-term1 environment as described in the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) installation instructions!):
+The implementation has been performed by using functions of the OpenCV library. Of them, the most important are Canny and HoughLinesP, which provide the Canny detection algorithm and the Hough transform. Additional functions to convert to gray scale or just to represent the calculated lines have also been used.
 
-`> jupyter notebook`
+In order to enhance the visual representation, extrapolation has been implemented in the function draw_lines, so that the full extent of the detected lane line is shown. This has been achieved by splitting the left and right lines through computation of each slope and characterizing the slope and intercept of the two resulting lines. With these results, the characterization has been evaluated at the bottom of the Y-axis and at the top of the defined region of interest. The pair of points obtained for each side are the start and end of our lines:
 
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
+[image2]: ./test_images_output/solidYellowLeftFull.jpg "Detected lines after extrapolating"
+![alt text][image2]
 
-**Step 3:** Complete the project and submit both the Ipython notebook and the project writeup
+Finally, the pipeline has been tested by using videos instead of images to show its behavior in an environment closer to the reality. Here it was easy to see how the detected lines and the results of the extrapolation strongly depends on the parameters of the Canny edge detection algorithm (gradient thresolds), Hough transform (number of intersections, number of minimum pixels...) and the sides of the masked region. A hard configuration of the parameters makes that, for some particular frames, no lines are detected in one side. This can be seen in the file solidYellowLeft.mp4. It is needed, for example, setting the top side of the region of interest at the point 290 of the Y axis, or reducing the min_line_length to 25 to detect at least one dashed line for all the frames. Such a permissive configuration like that, on the other hand, brings to detection of undesired elements that makes the extrapolation less accurate. In order to not disturb the final representation, the initial values of the Canny and Hough parameters have been selected and all calculated lines with a slope lower than or equal to 0.5 have been filtered.
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+### 2. Potential shortcomings
 
+As previously mentioned, a weakness of the pipeline is that, for some particular frames, no lines are detected in the dashed line. By tuning the parameters of the used algorithms for solving the problem, a calculation less accurate of the lines has been achieved for more frames. Under these circumstances, a filtering of some lines has been implemented. Specifically, all calculated lines with slope lower than or equal to 0.5. In this way only the correct calculation of the lines is shown, but for a tiny number of frames there is no line representation.
+
+### 3. Possible improvements
+
+An enhancement could be applied by calculating the average slopes and intercepts of a number of previous frames. By doing so it would be possible to represent a line for all frames without avoiding a loss of accuracy and the appearance of disturbing lines. The correct performance of this solution would depend on  how many previous frames are used to do the average. The inconvenient of the solution is that additional buffers would have to be defined to store the previous calculations, so the pipeline would maybe need excessive memory resources.
